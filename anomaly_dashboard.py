@@ -3,26 +3,30 @@ dashboard.py
 ------------
 Solar Anomaly Detection Dashboard
 Run with: streamlit run dashboard.py
+
+This dashboard shows solar energy production anomalies across different sites.
+It helps operators understand which sites are underperforming and why.
+All explanations are simplified for beginners.
 """
 
 # ── IMPORTS ────────────────────────────────────────────────────────────────
-import streamlit as st           # For creating the interactive dashboard
-import pandas as pd             # For working with tables of data
-import numpy as np              # For math operations
+import streamlit as st           # For creating interactive web dashboards
+import pandas as pd             # For working with tables (like Excel)
+import numpy as np              # For math calculations
 import plotly.graph_objects as go   # For interactive charts
-import plotly.express as px         # For simpler interactive charts
+import plotly.express as px         # For simpler charts
 import os                        # To check if files exist
-import json                      # To read JSON files
+import json                      # To read model metrics stored in JSON
 
 # ── PAGE CONFIGURATION ─────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Solar Anomaly Detection",  # Title of the dashboard
+    page_title="Solar Anomaly Detection",  # Browser tab title
     page_icon="🔍",                        # Small icon in the browser tab
-    layout="wide"                           # Use full width of the browser
+    layout="wide"                           # Full width dashboard
 )
 
 # ── CUSTOM STYLES ─────────────────────────────────────────────────────────
-# This changes how the metrics and alerts look (colors, sizes, etc.)
+# This changes the colors, fonts, and styles of the metrics and alerts
 st.markdown("""
 <style>
 .metric-card {
@@ -34,41 +38,43 @@ st.markdown("""
 }
 .metric-value { font-size: 28px; font-weight: 600; color: #1F4E79; }
 .metric-label { font-size: 12px; color: #666; margin-top: 4px; }
-.critical { color: #C00000 !important; }
-.high     { color: #ED7D31 !important; }
-.medium   { color: #FFC000 !important; }
+.critical { color: #C00000 !important; }  /* Red = Critical */
+.high     { color: #ED7D31 !important; }  /* Orange = High */
+.medium   { color: #FFC000 !important; }  /* Yellow = Medium */
 </style>
 """, unsafe_allow_html=True)
 
 # ── FUNCTION TO LOAD DATA ─────────────────────────────────────────────────
-@st.cache_data  # Cache so data is not reloaded every time we change something
+@st.cache_data
 def load_data():
     """
-    Loads anomaly scores, severity report, and evaluation metrics
-    from output files if they exist.
+    Loads 3 types of data generated from the anomaly detection pipeline:
+    
+    1. anomaly_scores.csv -> Contains energy production per site per month
+    2. severity_report.csv -> Shows severity of anomalies for each site/month
+    3. evaluation_metrics.json -> Model performance metrics (F1 score, false positives)
+    
+    Returns None if files do not exist.
     """
-    scores   = None    # Table of monthly actual vs expected kWh per site
-    severity = None    # Table of severity of anomalies
-    metrics  = None    # JSON with model performance metrics (F1, false positive rate)
+    scores   = None
+    severity = None
+    metrics  = None
 
-    # Load anomaly scores CSV if exists
     if os.path.exists("outputs/anomaly_scores.csv"):
         scores = pd.read_csv("outputs/anomaly_scores.csv")
-        scores['month_year'] = pd.to_datetime(scores['month_year'])  # Convert string to date
+        scores['month_year'] = pd.to_datetime(scores['month_year'])  # Convert text to date
 
-    # Load severity report CSV if exists
     if os.path.exists("outputs/severity_report.csv"):
         severity = pd.read_csv("outputs/severity_report.csv")
         severity['month_year'] = pd.to_datetime(severity['month_year'])
 
-    # Load evaluation metrics JSON if exists
     if os.path.exists("outputs/evaluation_metrics.json"):
         with open("outputs/evaluation_metrics.json") as f:
             metrics = json.load(f)
 
     return scores, severity, metrics
 
-# Load data into variables
+# Load data
 scores, severity, metrics = load_data()
 
 # ── HEADER ────────────────────────────────────────────────────────────────
@@ -76,27 +82,29 @@ st.title("🔍 Solar Site Anomaly Detection")
 st.markdown("**3-model ensemble** — Isolation Forest · PyTorch Autoencoder · Prophet")
 st.divider()
 
-# If there is no data yet, stop the dashboard and ask the user to run pipeline
+# Stop dashboard if no data exists yet
 if scores is None:
     st.warning("Run `anomaly_detection_pipeline.py` first to generate results.")
     st.stop()
 
 # ── TOP METRICS CARDS ─────────────────────────────────────────────────────
-# Count alerts by severity
-label_counts = scores['severity_label'].value_counts()
-critical = label_counts.get('CRITICAL', 0)
-high     = label_counts.get('HIGH', 0)
-medium   = label_counts.get('MEDIUM', 0)
-normal   = label_counts.get('NORMAL', 0)
+# These are summary metrics across all sites
 
-# Create 6 columns to display metrics
+label_counts = scores['severity_label'].value_counts()
+critical = label_counts.get('CRITICAL', 0)   # Red alerts = serious problems
+high     = label_counts.get('HIGH', 0)       # Orange alerts = moderate problems
+medium   = label_counts.get('MEDIUM', 0)    # Yellow alerts = minor problems
+normal   = label_counts.get('NORMAL', 0)    # Normal months
+
+# Create 6 columns to display summary metrics
 col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-# Column 1: Number of sites
+# Column 1: Number of sites monitored
 with col1:
     st.markdown(f"""<div class="metric-card">
         <div class="metric-value">{scores['site_id'].nunique()}</div>
         <div class="metric-label">Sites Monitored</div>
+        <div style='font-size:10px; color:#999'>Number of solar sites in the dataset</div>
     </div>""", unsafe_allow_html=True)
 
 # Column 2-4: Critical, High, Medium alerts
@@ -104,24 +112,28 @@ with col2:
     st.markdown(f"""<div class="metric-card">
         <div class="metric-value critical">{critical}</div>
         <div class="metric-label">Critical Alerts</div>
+        <div style='font-size:10px; color:#999'>Serious issues detected</div>
     </div>""", unsafe_allow_html=True)
 with col3:
     st.markdown(f"""<div class="metric-card">
         <div class="metric-value high">{high}</div>
         <div class="metric-label">High Alerts</div>
+        <div style='font-size:10px; color:#999'>Moderate issues detected</div>
     </div>""", unsafe_allow_html=True)
 with col4:
     st.markdown(f"""<div class="metric-card">
         <div class="metric-value medium">{medium}</div>
         <div class="metric-label">Medium Alerts</div>
+        <div style='font-size:10px; color:#999'>Minor issues detected</div>
     </div>""", unsafe_allow_html=True)
 
-# Column 5-6: F1 score and False Positive Rate from models
+# Column 5-6: Model performance metrics
 with col5:
     if metrics:
         st.markdown(f"""<div class="metric-card">
             <div class="metric-value">{metrics['f1']:.2f}</div>
             <div class="metric-label">F1 Score</div>
+            <div style='font-size:10px; color:#999'>How accurate our models are (1 = perfect)</div>
         </div>""", unsafe_allow_html=True)
 with col6:
     if metrics:
@@ -129,19 +141,18 @@ with col6:
         st.markdown(f"""<div class="metric-card">
             <div class="metric-value">{fpr:.2f}</div>
             <div class="metric-label">False Positive Rate</div>
+            <div style='font-size:10px; color:#999'>How often the model raises false alarms</div>
         </div>""", unsafe_allow_html=True)
 
 st.divider()
 
-# ── SITE SELECTOR & ALERTS ────────────────────────────────────────────────
+# ── LEFT PANEL: ACTIVE ALERTS ──────────────────────────────────────────────
 col_left, col_right = st.columns([1, 2])
 
-# Left column: Table of active alerts
 with col_left:
     st.subheader("🚨 Active Alerts — Priority Queue")
-
     if severity is not None and len(severity) > 0:
-        # Prepare table to display
+        # Prepare display table with simplified names
         display = severity[['site_id', 'month_year', 'severity_label',
                             'severity_score', 'model_consensus',
                             'performance_ratio']].copy()
@@ -154,7 +165,7 @@ with col_left:
             'model_consensus': 'Models', 'performance_ratio': 'Performance'
         })
 
-        # Highlight rows with colors based on severity
+        # Color rows by severity
         def highlight_severity(row):
             if row['Severity'] == 'CRITICAL':
                 return ['background-color: #FFEBEB'] * len(row)
@@ -173,7 +184,7 @@ with col_left:
     else:
         st.success("No active alerts — all sites normal")
 
-# Right column: Site timeline chart
+# ── RIGHT PANEL: SITE ANOMALY TIMELINE ───────────────────────────────────
 with col_right:
     st.subheader("📈 Site Anomaly Timeline")
 
@@ -183,7 +194,7 @@ with col_right:
 
     fig = go.Figure()
 
-    # Plot actual vs expected energy output
+    # Plot actual vs expected energy
     fig.add_trace(go.Scatter(
         x=site_data['month_year'], y=site_data['actual_kwh'],
         mode='lines+markers', name='Actual kWh',
@@ -195,7 +206,7 @@ with col_right:
         line=dict(color='#A0A0A0', width=1, dash='dash')
     ))
 
-    # Highlight anomalies with colored markers
+    # Highlight anomalies
     severity_colors = {
         'CRITICAL': '#C00000', 'HIGH': '#ED7D31', 'MEDIUM': '#FFC000'
     }
@@ -227,7 +238,6 @@ fig2.add_trace(go.Scatter(
     fill='tozeroy', fillcolor='rgba(237,125,49,0.2)',
     line=dict(color='#ED7D31', width=2), name='Severity Score'
 ))
-# Threshold lines for high/medium severity
 fig2.add_hline(y=0.5, line_dash='dash', line_color='red',
                annotation_text='High threshold', annotation_position='right')
 fig2.add_hline(y=0.3, line_dash='dash', line_color='orange',
@@ -246,21 +256,25 @@ col_a, col_b, col_c = st.columns(3)
 
 models_info = [
     ('Isolation Forest', 'iso_flagged', '#1F4E79',
-     'Detects sudden production drops using random partitioning'),
+     'Flags sudden drops in energy compared to usual monthly values'),
     ('PyTorch Autoencoder', 'ae_flagged', '#ED7D31',
-     'Detects pattern anomalies via reconstruction error'),
+     'Flags unusual patterns in energy production over time'),
     ('Prophet', 'prophet_flagged', '#70AD47',
-     'Detects months outside seasonal confidence intervals'),
+     'Flags months outside normal seasonal trends')
 ]
 
 for col, (name, col_name, color, desc) in zip([col_a, col_b, col_c], models_info):
     with col:
         if col_name in site_data.columns:
-            flagged_count = site_data[col_name].sum()
-            total         = len(site_data)
-            st.metric(name, f"{int(flagged_count)} flagged",
-                      f"{flagged_count/total*100:.0f}% of months")
-            st.caption(desc)
+            flagged_count = site_data[col_name].sum()  # Number of months flagged by this model
+            total = len(site_data)                     # Total months available
+            st.metric(
+                name,
+                f"{int(flagged_count)} flagged",        # How many months flagged
+                f"{flagged_count/total*100:.0f}% of months"  # Percentage of months
+            )
+            # Explanation for beginners
+            st.caption(desc + f" (Example: If a site produces 1000 kWh normally and suddenly produces 600 kWh, it will be flagged)")
 
 # ── FOOTER ───────────────────────────────────────────────────────────────
 st.divider()
