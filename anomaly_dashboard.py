@@ -1,8 +1,3 @@
-st.set_page_config(
-    page_title="Solar Anomaly Detection",
-    page_icon="🔍",
-    layout="wide"
-)
 """
 dashboard.py
 ------------
@@ -10,42 +5,24 @@ Solar Anomaly Detection Dashboard
 Run with: streamlit run dashboard.py
 """
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-import os
-import json
+# ── IMPORTS ────────────────────────────────────────────────────────────────
+import streamlit as st           # For creating the interactive dashboard
+import pandas as pd             # For working with tables of data
+import numpy as np              # For math operations
+import plotly.graph_objects as go   # For interactive charts
+import plotly.express as px         # For simpler interactive charts
+import os                        # To check if files exist
+import json                      # To read JSON files
 
+# ── PAGE CONFIGURATION ─────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Solar Anomaly Detection",
-    page_icon="🔍",
-    layout="wide"
+    page_title="Solar Anomaly Detection",  # Title of the dashboard
+    page_icon="🔍",                        # Small icon in the browser tab
+    layout="wide"                           # Use full width of the browser
 )
-# ── APP INTRODUCTION ─────────────────────────────────────────────────────────
-st.markdown("""
-# 🔍 Solar Panel Anomaly Detection Dashboard
 
-Welcome! This dashboard helps monitor **solar panel performance** across multiple sites and automatically detects anomalies that could impact energy production.
-
-**Key Features:**
-- ✅ Tracks actual vs expected energy output (kWh) per site
-- ✅ Highlights anomalies with severity labels: CRITICAL, HIGH, MEDIUM
-- ✅ Displays top-level metrics: number of sites, alerts, F1 score, false positive rate
-- ✅ Ensemble of 3 models: Isolation Forest, PyTorch Autoencoder, Prophet
-- ✅ Visualizes site-specific anomaly timeline and model consensus
-- ✅ Provides detailed severity and performance ratio for operational decisions
-
-**Why it matters:**  
-Solar panels can experience faults, degradation, or abnormal behavior that reduces energy output. Early detection of anomalies allows for proactive maintenance, higher efficiency, and cost savings.
-
-*Scroll down to explore active alerts, site timelines, severity scores, and model consensus.*
-""")
-st.divider()
-
-
-
+# ── CUSTOM STYLES ─────────────────────────────────────────────────────────
+# This changes how the metrics and alerts look (colors, sizes, etc.)
 st.markdown("""
 <style>
 .metric-card {
@@ -63,53 +40,66 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-@st.cache_data
+# ── FUNCTION TO LOAD DATA ─────────────────────────────────────────────────
+@st.cache_data  # Cache so data is not reloaded every time we change something
 def load_data():
-    scores   = None
-    severity = None
-    metrics  = None
+    """
+    Loads anomaly scores, severity report, and evaluation metrics
+    from output files if they exist.
+    """
+    scores   = None    # Table of monthly actual vs expected kWh per site
+    severity = None    # Table of severity of anomalies
+    metrics  = None    # JSON with model performance metrics (F1, false positive rate)
 
+    # Load anomaly scores CSV if exists
     if os.path.exists("outputs/anomaly_scores.csv"):
         scores = pd.read_csv("outputs/anomaly_scores.csv")
-        scores['month_year'] = pd.to_datetime(scores['month_year'])
+        scores['month_year'] = pd.to_datetime(scores['month_year'])  # Convert string to date
 
+    # Load severity report CSV if exists
     if os.path.exists("outputs/severity_report.csv"):
         severity = pd.read_csv("outputs/severity_report.csv")
         severity['month_year'] = pd.to_datetime(severity['month_year'])
 
+    # Load evaluation metrics JSON if exists
     if os.path.exists("outputs/evaluation_metrics.json"):
         with open("outputs/evaluation_metrics.json") as f:
             metrics = json.load(f)
 
     return scores, severity, metrics
 
-
+# Load data into variables
 scores, severity, metrics = load_data()
 
-# ── HEADER ────────────────────────────────────────────────────────────────────
+# ── HEADER ────────────────────────────────────────────────────────────────
 st.title("🔍 Solar Site Anomaly Detection")
 st.markdown("**3-model ensemble** — Isolation Forest · PyTorch Autoencoder · Prophet")
 st.divider()
 
+# If there is no data yet, stop the dashboard and ask the user to run pipeline
 if scores is None:
     st.warning("Run `anomaly_detection_pipeline.py` first to generate results.")
     st.stop()
 
-# ── TOP METRICS ───────────────────────────────────────────────────────────────
+# ── TOP METRICS CARDS ─────────────────────────────────────────────────────
+# Count alerts by severity
 label_counts = scores['severity_label'].value_counts()
 critical = label_counts.get('CRITICAL', 0)
 high     = label_counts.get('HIGH', 0)
 medium   = label_counts.get('MEDIUM', 0)
 normal   = label_counts.get('NORMAL', 0)
 
+# Create 6 columns to display metrics
 col1, col2, col3, col4, col5, col6 = st.columns(6)
 
+# Column 1: Number of sites
 with col1:
     st.markdown(f"""<div class="metric-card">
         <div class="metric-value">{scores['site_id'].nunique()}</div>
         <div class="metric-label">Sites Monitored</div>
     </div>""", unsafe_allow_html=True)
+
+# Column 2-4: Critical, High, Medium alerts
 with col2:
     st.markdown(f"""<div class="metric-card">
         <div class="metric-value critical">{critical}</div>
@@ -125,6 +115,8 @@ with col4:
         <div class="metric-value medium">{medium}</div>
         <div class="metric-label">Medium Alerts</div>
     </div>""", unsafe_allow_html=True)
+
+# Column 5-6: F1 score and False Positive Rate from models
 with col5:
     if metrics:
         st.markdown(f"""<div class="metric-card">
@@ -141,13 +133,15 @@ with col6:
 
 st.divider()
 
-# ── SITE SELECTOR ─────────────────────────────────────────────────────────────
+# ── SITE SELECTOR & ALERTS ────────────────────────────────────────────────
 col_left, col_right = st.columns([1, 2])
 
+# Left column: Table of active alerts
 with col_left:
     st.subheader("🚨 Active Alerts — Priority Queue")
 
     if severity is not None and len(severity) > 0:
+        # Prepare table to display
         display = severity[['site_id', 'month_year', 'severity_label',
                             'severity_score', 'model_consensus',
                             'performance_ratio']].copy()
@@ -160,6 +154,7 @@ with col_left:
             'model_consensus': 'Models', 'performance_ratio': 'Performance'
         })
 
+        # Highlight rows with colors based on severity
         def highlight_severity(row):
             if row['Severity'] == 'CRITICAL':
                 return ['background-color: #FFEBEB'] * len(row)
@@ -178,6 +173,7 @@ with col_left:
     else:
         st.success("No active alerts — all sites normal")
 
+# Right column: Site timeline chart
 with col_right:
     st.subheader("📈 Site Anomaly Timeline")
 
@@ -187,7 +183,7 @@ with col_right:
 
     fig = go.Figure()
 
-    # Actual vs Expected
+    # Plot actual vs expected energy output
     fig.add_trace(go.Scatter(
         x=site_data['month_year'], y=site_data['actual_kwh'],
         mode='lines+markers', name='Actual kWh',
@@ -199,7 +195,7 @@ with col_right:
         line=dict(color='#A0A0A0', width=1, dash='dash')
     ))
 
-    # Highlight anomalies
+    # Highlight anomalies with colored markers
     severity_colors = {
         'CRITICAL': '#C00000', 'HIGH': '#ED7D31', 'MEDIUM': '#FFC000'
     }
@@ -222,9 +218,7 @@ with col_right:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-st.divider()
-
-# ── SEVERITY SCORE CHART ──────────────────────────────────────────────────────
+# ── SEVERITY SCORE CHART ──────────────────────────────────────────────────
 st.subheader("🎯 Ensemble Severity Score — " + selected_site)
 
 fig2 = go.Figure()
@@ -233,6 +227,7 @@ fig2.add_trace(go.Scatter(
     fill='tozeroy', fillcolor='rgba(237,125,49,0.2)',
     line=dict(color='#ED7D31', width=2), name='Severity Score'
 ))
+# Threshold lines for high/medium severity
 fig2.add_hline(y=0.5, line_dash='dash', line_color='red',
                annotation_text='High threshold', annotation_position='right')
 fig2.add_hline(y=0.3, line_dash='dash', line_color='orange',
@@ -244,7 +239,7 @@ fig2.update_layout(
 )
 st.plotly_chart(fig2, use_container_width=True)
 
-# ── MODEL CONSENSUS ───────────────────────────────────────────────────────────
+# ── MODEL CONSENSUS ───────────────────────────────────────────────────────
 st.subheader("🤝 Model Consensus — How Many Models Agree")
 
 col_a, col_b, col_c = st.columns(3)
@@ -267,6 +262,7 @@ for col, (name, col_name, color, desc) in zip([col_a, col_b, col_c], models_info
                       f"{flagged_count/total*100:.0f}% of months")
             st.caption(desc)
 
+# ── FOOTER ───────────────────────────────────────────────────────────────
 st.divider()
 st.markdown("""
 <div style='text-align:center; color:#999; font-size:12px'>
