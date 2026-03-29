@@ -1,0 +1,6 @@
+{
+  "precision": 0.456,
+  "recall": 0.181,
+  "f1": 0.259,
+  "false_positive_rate": 0.087
+}
