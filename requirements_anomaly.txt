@@ -3,7 +3,7 @@ numpy
 scikit-learn
 torch
 matplotlib
-plotly
+plotly==5.18.0
 streamlit
 openpyxl
 joblib
