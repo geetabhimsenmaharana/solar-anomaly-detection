@@ -265,15 +265,15 @@ Each model checks your solar site's monthly energy to find unusual behavior:
      - June  = 600 kWh ✅ (flagged)  
      - Total months = 8  
      - Result: **2 flagged → 25% of months**
-     -2 flagged: This means 2 months were flagged by the Isolation Forest model as unusual or problematic. In other words, out of all the months recorded for a particular site, 2 of them looked abnormal in energy production.
+     - 2 flagged: This means 2 months were flagged by the Isolation Forest model as unusual or problematic. In other words, out of all the months recorded for a particular site, 2 of them looked abnormal in energy production.
      - Suppose we have 8 months of energy production: Say, March and June are the 2 flagged months.
-     -25% of months: This is the percentage of months that were flagged.
-     -Calculation: Percentage = (Flagged Months​/Total Months) x 100. = 2/8*100= 25%
-     -So the dashboard shows 2 flagged → 25% of months, meaning one-quarter of the months had abnormal energy detected by this model.
-     -Isolation Forest looks for months where energy drops abnormally.
-     -2 flagged → 2 months had unusual energy.
-     -25% of months → These 2 months make up 25% of all months for this site.
-     -Colors: Red = critical, orange = high, yellow = medium.
+     - 25% of months: This is the percentage of months that were flagged.
+     - Calculation: Percentage = (Flagged Months​/Total Months) x 100. = 2/8*100= 25%
+     - So the dashboard shows 2 flagged → 25% of months, meaning one-quarter of the months had abnormal energy detected by this model.
+     - Isolation Forest looks for months where energy drops abnormally.
+     - 2 flagged → 2 months had unusual energy.
+     - 25% of months → These 2 months make up 25% of all months for this site.
+     - Colors: Red = critical, orange = high, yellow = medium.
 
 2. **PyTorch Autoencoder**:  
    - Detects unusual patterns in energy production over time (not just sudden drops, but weird trends).  
@@ -290,10 +290,10 @@ Each model checks your solar site's monthly energy to find unusual behavior:
    - In other words, it’s checking if your site is producing energy like it normally would at that time of year.
    
    - Suppose we have a solar site with energy production for 8 months; Let say The actual energy is very close to expected energy each month. Prophet compares each month’s actual value to the expected value ± some tolerance.
-   -Since all months are within normal seasonal ranges, no month is flagged as unusual.
-   -What “0 flagged → 0% of months” means:
-   -0 flagged: Prophet did not find any month that was unusual compared to seasonal expectations.
-   -0% of months: Out of all months checked, 0% were abnormal according to Prophet.
+   - Since all months are within normal seasonal ranges, no month is flagged as unusual.
+   - What “0 flagged → 0% of months” means:
+   - 0 flagged: Prophet did not find any month that was unusual compared to seasonal expectations.
+   - 0% of months: Out of all months checked, 0% were abnormal according to Prophet.
    - Result: **0 flagged → 0% of months**
 """)
 
