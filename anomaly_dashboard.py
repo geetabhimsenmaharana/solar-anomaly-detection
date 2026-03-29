@@ -265,6 +265,15 @@ Each model checks your solar site's monthly energy to find unusual behavior:
      - June  = 600 kWh ✅ (flagged)  
      - Total months = 8  
      - Result: **2 flagged → 25% of months**
+     -2 flagged: This means 2 months were flagged by the Isolation Forest model as unusual or problematic. In other words, out of all the months recorded for a particular site, 2 of them looked abnormal in energy production.
+     - Suppose we have 8 months of energy production: Say, March and June are the 2 flagged months.
+     -25% of months: This is the percentage of months that were flagged.
+     -Calculation: Percentage = (Flagged Months​/Total Months) x 100. = 2/8*100= 25%
+     -So the dashboard shows 2 flagged → 25% of months, meaning one-quarter of the months had abnormal energy detected by this model.
+     -Isolation Forest looks for months where energy drops abnormally.
+     -2 flagged → 2 months had unusual energy.
+     -25% of months → These 2 months make up 25% of all months for this site.
+     -Colors: Red = critical, orange = high, yellow = medium.
 
 2. **PyTorch Autoencoder**:  
    - Detects unusual patterns in energy production over time (not just sudden drops, but weird trends).  
