@@ -285,9 +285,16 @@ Each model checks your solar site's monthly energy to find unusual behavior:
      - Result: **3 flagged → 38% of months**
 
 3. **Prophet**:  
-   - Detects months outside expected seasonal trends (like a winter month producing less than expected).  
-   - **Example:** All months are within expected seasonal range:  
-     - Result: **0 flagged → 0% of months**
+   - Prophet is a model that predicts what energy production should be each month based on past data and seasonal patterns.  - **Example:** All months are within expected seasonal range:  
+   - It looks at patterns across months or seasons (like summer, winter) and says: It looks at patterns across months or seasons (like summer, winter) and says
+   - In other words, it’s checking if your site is producing energy like it normally would at that time of year.
+   
+   - Suppose we have a solar site with energy production for 8 months; Let say The actual energy is very close to expected energy each month. Prophet compares each month’s actual value to the expected value ± some tolerance.
+   -Since all months are within normal seasonal ranges, no month is flagged as unusual.
+   -What “0 flagged → 0% of months” means:
+   -0 flagged: Prophet did not find any month that was unusual compared to seasonal expectations.
+   -0% of months: Out of all months checked, 0% were abnormal according to Prophet.
+   - Result: **0 flagged → 0% of months**
 """)
 
 # Create columns for each model metric
