@@ -252,6 +252,36 @@ st.plotly_chart(fig2, use_container_width=True)
 # ── MODEL CONSENSUS ───────────────────────────────────────────────────────
 st.subheader("🤝 Model Consensus — How Many Models Agree")
 
+# Beginner-friendly explanation for all models
+st.info("""
+**Beginner-Friendly Explanation:**
+
+Each model checks your solar site's monthly energy to find unusual behavior:
+
+1. **Isolation Forest**:  
+   - Looks for months where energy drops abnormally compared to usual monthly values.  
+   - **Example:** If a site usually produces 1000 kWh/month:  
+     - March = 700 kWh ✅ (flagged)  
+     - June  = 600 kWh ✅ (flagged)  
+     - Total months = 8  
+     - Result: **2 flagged → 25% of months**
+
+2. **PyTorch Autoencoder**:  
+   - Detects unusual patterns in energy production over time (not just sudden drops, but weird trends).  
+   - **Example:** Normally, energy slightly fluctuates: 980, 1000, 995, 1005…  
+     - February = 850 kWh ✅ (flagged)  
+     - May      = 1100 kWh ✅ (flagged)  
+     - August   = 1200 kWh ✅ (flagged)  
+     - Total months = 8  
+     - Result: **3 flagged → 38% of months**
+
+3. **Prophet**:  
+   - Detects months outside expected seasonal trends (like a winter month producing less than expected).  
+   - **Example:** All months are within expected seasonal range:  
+     - Result: **0 flagged → 0% of months**
+""")
+
+# Create columns for each model metric
 col_a, col_b, col_c = st.columns(3)
 
 models_info = [
@@ -263,18 +293,19 @@ models_info = [
      'Flags months outside normal seasonal trends')
 ]
 
+# Display metrics for each model
 for col, (name, col_name, color, desc) in zip([col_a, col_b, col_c], models_info):
     with col:
         if col_name in site_data.columns:
-            flagged_count = site_data[col_name].sum()  # Number of months flagged by this model
-            total = len(site_data)                     # Total months available
+            flagged_count = site_data[col_name].sum()  # Number of months flagged
+            total = len(site_data)                     # Total months
             st.metric(
                 name,
-                f"{int(flagged_count)} flagged",        # How many months flagged
-                f"{flagged_count/total*100:.0f}% of months"  # Percentage of months
+                f"{int(flagged_count)} flagged",        # Number of flagged months
+                f"{flagged_count/total*100:.0f}% of months"  # % of months flagged
             )
-            # Explanation for beginners
-            st.caption(desc + f" (Example: If a site produces 1000 kWh normally and suddenly produces 600 kWh, it will be flagged)")
+            # Short simple explanation for each model
+            st.caption(desc + f" (Example: see info box above for how months are flagged)")
 
 # ── FOOTER ───────────────────────────────────────────────────────────────
 st.divider()
