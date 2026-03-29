@@ -18,6 +18,28 @@ st.set_page_config(
     page_icon="🔍",
     layout="wide"
 )
+# ── APP INTRODUCTION ─────────────────────────────────────────────────────────
+st.markdown("""
+# 🔍 Solar Panel Anomaly Detection Dashboard
+
+Welcome! This dashboard helps monitor **solar panel performance** across multiple sites and automatically detects anomalies that could impact energy production.
+
+**Key Features:**
+- ✅ Tracks actual vs expected energy output (kWh) per site
+- ✅ Highlights anomalies with severity labels: CRITICAL, HIGH, MEDIUM
+- ✅ Displays top-level metrics: number of sites, alerts, F1 score, false positive rate
+- ✅ Ensemble of 3 models: Isolation Forest, PyTorch Autoencoder, Prophet
+- ✅ Visualizes site-specific anomaly timeline and model consensus
+- ✅ Provides detailed severity and performance ratio for operational decisions
+
+**Why it matters:**  
+Solar panels can experience faults, degradation, or abnormal behavior that reduces energy output. Early detection of anomalies allows for proactive maintenance, higher efficiency, and cost savings.
+
+*Scroll down to explore active alerts, site timelines, severity scores, and model consensus.*
+""")
+st.divider()
+
+
 
 st.markdown("""
 <style>
