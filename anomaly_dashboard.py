@@ -1,3 +1,8 @@
+st.set_page_config(
+    page_title="Solar Anomaly Detection",
+    page_icon="🔍",
+    layout="wide"
+)
 """
 dashboard.py
 ------------
