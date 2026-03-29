@@ -8,3 +8,5 @@ streamlit
 openpyxl
 joblib
 prophet
+matplotlib
+seaborn
